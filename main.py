@@ -7,13 +7,13 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # --- CONFIG ---
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
-GUPSHUP_API_KEY = os.environ.get("GUPSHUP_API_KEY", "yddbx2nltxe9pmvtxib6pnrmfuavqwkk")
-GUPSHUP_SOURCE = os.environ.get("GUPSHUP_SOURCE", "551151842004")
-GROQ_MODEL = "llama-3.3-70b-versatile"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
+GUPSHUP_API_KEY = os.environ.get("GUPSHUP_API_KEY", "4co9llvnblatkzxglfoskvjbp1z5sfxx")
+GUPSHUP_SOURCE = os.environ.get("GUPSHUP_SOURCE", "628158066119")
+OPENAI_MODEL = "gpt-5.4"
 HISTORY_FILE = "history.json"
 
-SYSTEM_PROMPT = """CRITICAL LANGUAGE RULE - HIGHEST PRIORITY: Always reply in the exact same language the guest used. If Russian - reply in Russian. If English - reply in English. If Serbian, Croatian, Bosnian - reply in that language. No exceptions. Never switch languages.
+SYSTEM_PROMPT = """CRITICAL RULE: You will receive the conversation history followed by the guest's new message. Use the history to avoid repeating yourself and to personalize the reply based on what has already been said. If the history is empty - this is the first message from this guest. If the guest asks the same question again in different words and you have already addressed it - do not repeat the same explanation. Approach it from a different angle, use a different example, or focus on a different aspect of the same topic.
 
 ## CONVERSATION HISTORY
 
@@ -257,7 +257,7 @@ def save_history(history):
         json.dump(history, f, ensure_ascii=False, indent=2)
 
 
-def get_groq_reply(phone, guest_message):
+def get_reply(phone, guest_message):
     history = load_history()
     conversation = history.get(phone, [])
 
@@ -273,13 +273,13 @@ def get_groq_reply(phone, guest_message):
     user_prompt = f"{history_text}\n\nNew message from guest:\n{guest_message}"
 
     response = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "https://api.openai.com/v1/chat/completions",
         headers={
-            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
             "Content-Type": "application/json"
         },
         json={
-            "model": GROQ_MODEL,
+            "model": OPENAI_MODEL,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
@@ -290,6 +290,12 @@ def get_groq_reply(phone, guest_message):
     )
 
     data = response.json()
+    print(f"[OPENAI RESPONSE] {data}")
+
+    if "choices" not in data:
+        error_msg = data.get("error", {}).get("message", "Unknown error")
+        raise Exception(f"OpenAI error: {error_msg}")
+
     reply = data["choices"][0]["message"]["content"].strip()
 
     # Remove <think>...</think> blocks if present
@@ -338,7 +344,7 @@ def webhook():
         print(f"[IN] {phone}: {guest_message}")
 
         # Get reply from Groq
-        reply = get_groq_reply(phone, guest_message)
+        reply = get_reply(phone, guest_message)
 
         print(f"[OUT] {phone}: {reply}")
 

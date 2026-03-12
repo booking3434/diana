@@ -7,15 +7,13 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # --- CONFIG ---
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
 GUPSHUP_API_KEY = os.environ.get("GUPSHUP_API_KEY", "4co9llvnblatkzxglfoskvjbp1z5sfxx")
 GUPSHUP_SOURCE = os.environ.get("GUPSHUP_SOURCE", "628158066119")
-OPENAI_MODEL = "gpt-5.4"
+OPENAI_MODEL = "gpt-4o"
 HISTORY_FILE = "history.json"
 
-SYSTEM_PROMPT = """CRITICAL RULE: You will receive the conversation history followed by the guest's new message. Use the history to avoid repeating yourself and to personalize the reply based on what has already been said. If the history is empty - this is the first message from this guest. If the guest asks the same question again in different words and you have already addressed it - do not repeat the same explanation. Approach it from a different angle, use a different example, or focus on a different aspect of the same topic.
-
-## CONVERSATION HISTORY
+SYSTEM_PROMPT = """## CONVERSATION HISTORY
 
 You will receive the conversation history followed by the guest's new message. Use the history to avoid repeating yourself and to personalize the reply based on what has already been said. If the history is empty - this is the first message from this guest. If the guest asks the same question again in different words and you have already addressed it - do not repeat the same explanation. Approach it from a different angle, use a different example, or focus on a different aspect of the same topic.
 
@@ -284,7 +282,7 @@ def get_reply(phone, guest_message):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
             ],
-            "max_tokens": 1000,
+            "max_completion_tokens": 1000,
             "temperature": 0.7
         }
     )
